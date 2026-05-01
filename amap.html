@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全球地图导航 - 免费使用</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html, body {
+            height: 100%;
+            font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+        }
+        .header {
+            background: linear-gradient(135deg, #1E3A5F 0%, #2563EB 100%);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .header h1 {
+            font-size: 22px;
+            font-weight: 600;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+        .header h1 span {
+            font-size: 12px;
+            font-weight: 400;
+            opacity: 0.9;
+            margin-left: 10px;
+        }
+        .header-nav {
+            display: flex;
+            gap: 10px;
+        }
+        .header-nav button {
+            color: white;
+            background: rgba(255,255,255,0.15);
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            padding: 8px 14px;
+            border-radius: 4px;
+            transition: background 0.3s;
+        }
+        .header-nav button:hover {
+            background: rgba(255,255,255,0.25);
+        }
+        .header-nav button.active {
+            background: rgba(255,255,255,0.35);
+        }
+        .banner {
+            background: linear-gradient(90deg, #FF6B6B, #4ECDC4, #45B7D1, #96CEB4);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+            color: white;
+            text-align: center;
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: 500;
+            text-shadow: 1px 1px 1px rgba(0,0,0,0.2);
+        }
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .main-container {
+            display: flex;
+            height: calc(100% - 95px);
+        }
+        .sidebar {
+            width: 300px;
+            background: #f8f9fa;
+            border-right: 1px solid #ddd;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        .search-box {
+            padding: 15px;
+            background: white;
+            border-bottom: 1px solid #ddd;
+        }
+        .search-box h3 {
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        .search-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .search-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .search-input-wrapper .label {
+            width: 35px;
+            font-size: 13px;
+            color: #666;
+            font-weight: 500;
+        }
+        .search-input {
+            flex: 1;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .search-input:focus {
+            outline: none;
+            border-color: #2563EB;
+            box-shadow: 0 0 0 2px rgba(37,99,235,0.1);
+        }
+        .search-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            margin-top: 5px;
+            transition: transform 0.2s;
+        }
+        .search-btn:hover {
+            transform: translateY(-1px);
+        }
+        .nav-section {
+            padding: 15px;
+        }
+        .nav-section h3 {
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 10px;
+            font-weight: 600;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #2563EB;
+        }
+        .continent-title {
+            font-size: 13px;
+            color: #1E3A5F;
+            margin: 12px 0 8px 0;
+            font-weight: 600;
+        }
+        .nav-list {
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+        }
+        .nav-list li {
+            width: 50%;
+            padding: 4px 0;
+        }
+        .nav-list a {
+            color: #2563EB;
+            text-decoration: none;
+            font-size: 12px;
+        }
+        .nav-list a:hover {
+            text-decoration: underline;
+            color: #1D4ED8;
+        }
+        .map-container {
+            flex: 1;
+            position: relative;
+        }
+        #map-container {
+            width: 100%;
+            height: 100%;
+        }
+        .layer-panel {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+            z-index: 1000;
+            padding: 8px;
+        }
+        .layer-panel button {
+            display: block;
+            width: 85px;
+            height: 34px;
+            border: none;
+            background: white;
+            cursor: pointer;
+            font-size: 13px;
+            border-radius: 4px;
+            margin: 4px 0;
+            transition: all 0.2s;
+        }
+        .layer-panel button:hover {
+            background: #f0f0f0;
+        }
+        .layer-panel button.active {
+            background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+            color: white;
+        }
+        .search-panel {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+            z-index: 1000;
+            padding: 10px;
+            width: 250px;
+        }
+        .search-panel input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        .search-panel input:focus {
+            outline: none;
+            border-color: #2563EB;
+        }
+        .search-suggestions {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            display: none;
+        }
+        .search-suggestions.show {
+            display: block;
+        }
+        .search-suggestions div {
+            padding: 8px 10px;
+            cursor: pointer;
+            font-size: 12px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .search-suggestions div:hover {
+            background: #f0f7ff;
+        }
+        .route-result {
+            padding: 12px;
+            background: white;
+            border-top: 1px solid #ddd;
+            display: none;
+        }
+        .route-result.show {
+            display: block;
+        }
+        .route-result h4 {
+            font-size: 13px;
+            color: #333;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+        .route-info {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.5;
+        }
+        .clear-btn {
+            padding: 6px 12px;
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            margin-top: 6px;
+        }
+        .clear-btn:hover {
+            background: #eee;
+        }
+        .leaflet-control-zoom {
+            bottom: 10px !important;
+        }
+        .leaflet-popup-content-wrapper {
+            border-radius: 8px;
+        }
+        .country-flag {
+            font-size: 16px;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🌍 全球地图导航 <span>免费 · 无需注册 · 永久使用</span></h1>
+        <div class="header-nav">
+            <button id="nav-road" class="active">道路图</button>
+            <button id="nav-satellite">卫星图</button>
+            <button id="nav-terrain">地形图</button>
+        </div>
+    </div>
+    <div class="banner">
+        🚀 探索世界，从这里开始！覆盖全球200+国家和地区，免费使用，无需API密钥！
+    </div>
+    <div class="main-container">
+        <div class="sidebar">
+            <div class="search-box">
+                <h3>🛣️ 路线规划</h3>
+                <div class="search-input-group">
+                    <div class="search-input-wrapper">
+                        <span class="label">起点</span>
+                        <input type="text" class="search-input" id="start-input" placeholder="输入起点地址">
+                    </div>
+                    <div class="search-input-wrapper">
+                        <span class="label">终点</span>
+                        <input type="text" class="search-input" id="end-input" placeholder="输入终点地址">
+                    </div>
+                    <button class="search-btn" id="search-route">查询路线</button>
+                </div>
+            </div>
+            <div class="route-result" id="route-result">
+                <h4>📍 路线信息</h4>
+                <div class="route-info" id="route-info"></div>
+                <button class="clear-btn" id="clear-route">清除路线</button>
+            </div>
+            <div class="nav-section">
+                <h3>🌐 全球导航</h3>
+                
+                <div class="continent-title">🌏 亚洲</div>
+                <ul class="nav-list">
+                    <li><a href="#" data-city="北京" data-lng="116.4074" data-lat="39.9042">🇨🇳 中国北京</a></li>
+                    <li><a href="#" data-city="上海" data-lng="121.4737" data-lat="31.2304">🇨🇳 中国上海</a></li>
+                    <li><a href="#" data-city="香港" data-lng="114.1694" data-lat="22.2783">🇭🇰 香港</a></li>
+                    <li><a href="#" data-city="台北" data-lng="121.5090" data-lat="25.0443">🇹🇼 台湾</a></li>
+                    <li><a href="#" data-city="东京" data-lng="139.6917" data-lat="35.6895">🇯🇵 日本东京</a></li>
+                    <li><a href="#" data-city="首尔" data-lng="126.9780" data-lat="37.5665">🇰🇷 韩国首尔</a></li>
+                    <li><a href="#" data-city="曼谷" data-lng="100.5018" data-lat="13.7563">🇹🇭 泰国曼谷</a></li>
+                    <li><a href="#" data-city="新加坡" data-lng="103.8198" data-lat="1.3521">🇸🇬 新加坡</a></li>
+                    <li><a href="#" data-city="吉隆坡" data-lng="101.6869" data-lat="3.1390">🇲🇾 马来西亚</a></li>
+                    <li><a href="#" data-city="雅加达" data-lng="106.8456" data-lat="-6.2088">🇮🇩 印尼雅加达</a></li>
+                    <li><a href="#" data-city="马尼拉" data-lng="120.9842" data-lat="14.5995">🇵🇭 菲律宾</a></li>
+                    <li><a href="#" data-city="河内" data-lng="105.8342" data-lat="21.0278">🇻🇳 越南河内</a></li>
+                    <li><a href="#" data-city="新德里" data-lng="77.2090" data-lat="28.6139">🇮🇳 印度新德里</a></li>
+                    <li><a href="#" data-city="迪拜" data-lng="55.2708" data-lat="25.2048">🇦🇪 阿联酋迪拜</a></li>
+                    <li><a href="#" data-city="利雅得" data-lng="46.6753" data-lat="24.7136">🇸🇦 沙特利雅得</a></li>
+                    <li><a href="#" data-city="伊斯坦布尔" data-lng="28.9784" data-lat="41.0082">🇹🇷 土耳其</a></li>
+                </ul>
+                
+                <div class="continent-title">🌍 欧洲</div>
+                <ul class="nav-list">
+                    <li><a href="#" data-city="伦敦" data-lng="-0.1276" data-lat="51.5074">🇬🇧 英国伦敦</a></li>
+                    <li><a href="#" data-city="巴黎" data-lng="2.3522" data-lat="48.8566">🇫🇷 法国巴黎</a></li>
+                    <li><a href="#" data-city="柏林" data-lng="13.4050" data-lat="52.5200">🇩🇪 德国柏林</a></li>
+                    <li><a href="#" data-city="罗马" data-lng="12.4964" data-lat="41.9028">🇮🇹 意大利罗马</a></li>
+                    <li><a href="#" data-city="马德里" data-lng="-3.7038" data-lat="40.4168">🇪🇸 西班牙马德里</a></li>
+                    <li><a href="#" data-city="阿姆斯特丹" data-lng="4.9041" data-lat="52.3676">🇳🇱 荷兰阿姆斯特丹</a></li>
+                    <li><a href="#" data-city="布鲁塞尔" data-lng="4.3517" data-lat="50.8503">🇧🇪 比利时</a></li>
+                    <li><a href="#" data-city="维也纳" data-lng="16.3738" data-lat="48.2082">🇦🇹 奥地利</a></li>
+                    <li><a href="#" data-city="苏黎世" data-lng="8.5417" data-lat="47.3769">🇨🇭 瑞士苏黎世</a></li>
+                    <li><a href="#" data-city="莫斯科" data-lng="37.6173" data-lat="55.7558">🇷🇺 俄罗斯莫斯科</a></li>
+                    <li><a href="#" data-city="雅典" data-lng="23.7275" data-lat="37.9838">🇬🇷 希腊雅典</a></li>
+                    <li><a href="#" data-city="布拉格" data-lng="14.4378" data-lat="50.0755">🇨🇿 捷克布拉格</a></li>
+                    <li><a href="#" data-city="华沙" data-lng="21.0122" data-lat="52.2297">🇵🇱 波兰华沙</a></li>
+                    <li><a href="#" data-city="斯德哥尔摩" data-lng="18.0686" data-lat="59.3293">🇸🇪 瑞典</a></li>
+                    <li><a href="#" data-city="奥斯陆" data-lng="10.7522" data-lat="59.9139">🇳🇴 挪威奥斯陆</a></li>
+                    <li><a href="#" data-city="哥本哈根" data-lng="12.5683" data-lat="55.6761">🇩🇰 丹麦</a></li>
+                </ul>
+                
+                <div class="continent-title">🌎 美洲</div>
+                <ul class="nav-list">
+                    <li><a href="#" data-city="纽约" data-lng="-74.0060" data-lat="40.7128">🇺🇸 美国纽约</a></li>
+                    <li><a href="#" data-city="洛杉矶" data-lng="-118.2437" data-lat="34.0522">🇺🇸 美国洛杉矶</a></li>
+                    <li><a href="#" data-city="旧金山" data-lng="-122.4194" data-lat="37.7749">🇺🇸 美国旧金山</a></li>
+                    <li><a href="#" data-city="华盛顿" data-lng="-77.0369" data-lat="38.9072">🇺🇸 美国华盛顿</a></li>
+                    <li><a href="#" data-city="芝加哥" data-lng="-87.6298" data-lat="41.8781">🇺🇸 芝加哥</a></li>
+                    <li><a href="#" data-city="迈阿密" data-lng="-80.1918" data-lat="25.7617">🇺🇸 迈阿密</a></li>
+                    <li><a href="#" data-city="多伦多" data-lng="-79.3832" data-lat="43.6532">🇨🇦 加拿大多伦多</a></li>
+                    <li><a href="#" data-city="温哥华" data-lng="-123.1207" data-lat="49.2827">🇨🇦 温哥华</a></li>
+                    <li><a href="#" data-city="墨西哥城" data-lng="-99.1332" data-lat="19.4326">🇲🇽 墨西哥</a></li>
+                    <li><a href="#" data-city="里约热内卢" data-lng="-43.1729" data-lat="-22.9068">🇧🇷 巴西里约</a></li>
+                    <li><a href="#" data-city="圣保罗" data-lng="-46.6333" data-lat="-23.5505">🇧🇷 圣保罗</a></li>
+                    <li><a href="#" data-city="布宜诺斯艾利斯" data-lng="-58.3816" data-lat="-34.6037">🇦🇷 阿根廷</a></li>
+                    <li><a href="#" data-city="利马" data-lng="-77.0428" data-lat="-12.0464">🇵🇪 秘鲁利马</a></li>
+                    <li><a href="#" data-city="圣地亚哥" data-lng="-70.6483" data-lat="-33.4489">🇨🇱 智利</a></li>
+                    <li><a href="#" data-city="哈瓦那" data-lng="-82.3666" data-lat="23.1136">🇨🇺 古巴</a></li>
+                    <li><a href="#" data-city="巴拿马城" data-lng="-79.5199" data-lat="8.9824">🇵🇦 巴拿马</a></li>
+                </ul>
+                
+                <div class="continent-title">🌍 非洲</div>
+                <ul class="nav-list">
+                    <li><a href="#" data-city="开罗" data-lng="31.2357" data-lat="30.0444">🇪🇬 埃及开罗</a></li>
+                    <li><a href="#" data-city="约翰内斯堡" data-lng="28.0473" data-lat="-26.2041">🇿🇦 南非约翰内斯堡</a></li>
+                    <li><a href="#" data-city="开普敦" data-lng="18.4241" data-lat="-33.9249">🇿🇦 开普敦</a></li>
+                    <li><a href="#" data-city="摩洛哥" data-lng="-7.5898" data-lat="31.7917">🇲🇦 摩洛哥</a></li>
+                    <li><a href="#" data-city="内罗毕" data-lng="36.8219" data-lat="-1.2921">🇰🇪 肯尼亚</a></li>
+                    <li><a href="#" data-city="拉各斯" data-lng="3.3792" data-lat="6.5244">🇳🇬 尼日利亚</a></li>
+                    <li><a href="#" data-city="达累斯萨拉姆" data-lng="39.2083" data-lat="-6.7924">🇹🇿 坦桑尼亚</a></li>
+                    <li><a href="#" data-city="阿尔及尔" data-lng="3.0589" data-lat="36.7538">🇩🇿 阿尔及利亚</a></li>
+                    <li><a href="#" data-city="突尼斯" data-lng="10.1815" data-lat="36.8065">🇹🇳 突尼斯</a></li>
+                    <li><a href="#" data-city="卡萨布兰卡" data-lng="-7.5898" data-lat="33.5731">🇲🇦 卡萨布兰卡</a></li>
+                    <li><a href="#" data-city="蒙巴萨" data-lng="39.6683" data-lat="-4.0435">🇰🇪 蒙巴萨</a></li>
+                    <li><a href="#" data-city="亚的斯亚贝巴" data-lng="38.7469" data-lat="9.0320">🇪🇹 埃塞俄比亚</a></li>
+                </ul>
+                
+                <div class="continent-title">🌏 大洋洲</div>
+                <ul class="nav-list">
+                    <li><a href="#" data-city="悉尼" data-lng="151.2093" data-lat="-33.8688">🇦🇺 澳大利亚悉尼</a></li>
+                    <li><a href="#" data-city="墨尔本" data-lng="144.9631" data-lat="-37.8136">🇦🇺 墨尔本</a></li>
+                    <li><a href="#" data-city="布里斯班" data-lng="153.0251" data-lat="-27.4698">🇦🇺 布里斯班</a></li>
+                    <li><a href="#" data-city="珀斯" data-lng="115.8614" data-lat="-31.9505">🇦🇺 珀斯</a></li>
+                    <li><a href="#" data-city="奥克兰" data-lng="174.7633" data-lat="-36.8485">🇳🇿 新西兰奥克兰</a></li>
+                    <li><a href="#" data-city="惠灵顿" data-lng="174.7762" data-lat="-41.2866">🇳🇿 惠灵顿</a></li>
+                    <li><a href="#" data-city="苏瓦" data-lng="178.4450" data-lat="-18.1416">🇫🇯 斐济</a></li>
+                    <li><a href="#" data-city="帕皮提" data-lng="-149.4260" data-lat="-17.5516">🇵🇫 法属波利尼西亚</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="map-container">
+            <div id="map-container"></div>
+            <div class="layer-panel">
+                <button id="btn-road" class="active">🗺️ 道路</button>
+                <button id="btn-satellite">🛰️ 卫星</button>
+                <button id="btn-hybrid">🏔️ 地形</button>
+            </div>
+            <div class="search-panel">
+                <input type="text" id="global-search" placeholder="🔍 搜索全球任意地点...">
+                <div class="search-suggestions" id="suggestions"></div>
+            </div>
+        </div>
+    </div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        var map, markers = [], routeLayer;
+        
+        var roadLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+        });
+        
+        var satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: '© Esri'
+        });
+        
+        var terrainLayer = L.tileLayer('https://{s}.tile.stamen.com/terrain/{z}/{x}/{y}.png', {
+            attribution: '© Stamen'
+        });
+        
+        var baseLayers = {
+            '道路': roadLayer,
+            '卫星': satelliteLayer,
+            '地形': terrainLayer
+        };
+        
+        var popularCities = [
+            { name: '北京', lng: 116.4074, lat: 39.9042 },
+            { name: '上海', lng: 121.4737, lat: 31.2304 },
+            { name: '香港', lng: 114.1694, lat: 22.2783 },
+            { name: '东京', lng: 139.6917, lat: 35.6895 },
+            { name: '首尔', lng: 126.9780, lat: 37.5665 },
+            { name: '曼谷', lng: 100.5018, lat: 13.7563 },
+            { name: '新加坡', lng: 103.8198, lat: 1.3521 },
+            { name: '伦敦', lng: -0.1276, lat: 51.5074 },
+            { name: '巴黎', lng: 2.3522, lat: 48.8566 },
+            { name: '柏林', lng: 13.4050, lat: 52.5200 },
+            { name: '罗马', lng: 12.4964, lat: 41.9028 },
+            { name: '纽约', lng: -74.0060, lat: 40.7128 },
+            { name: '洛杉矶', lng: -118.2437, lat: 34.0522 },
+            { name: '旧金山', lng: -122.4194, lat: 37.7749 },
+            { name: '悉尼', lng: 151.2093, lat: -33.8688 },
+            { name: '迪拜', lng: 55.2708, lat: 25.2048 },
+            { name: '莫斯科', lng: 37.6173, lat: 55.7558 },
+            { name: '开罗', lng: 31.2357, lat: 30.0444 },
+            { name: '里约热内卢', lng: -43.1729, lat: -22.9068 },
+            { name: '孟买', lng: 72.8777, lat: 19.0760 }
+        ];
+        
+        function initMap() {
+            map = L.map('map-container', {
+                center: [30, 105],
+                zoom: 4,
+                layers: [roadLayer]
+            });
+            
+            L.control.scale().addTo(map);
+            L.control.layers(baseLayers).addTo(map);
+            
+            map.on('click', function(e) {
+                addMarker(e.latlng);
+            });
+            
+            setupEventListeners();
+            setupGlobalSearch();
+        }
+        
+        function addMarker(latlng) {
+            var marker = L.marker(latlng).addTo(map);
+            markers.push(marker);
+            marker.bindPopup('📍 坐标: ' + latlng.lat.toFixed(4) + ', ' + latlng.lng.toFixed(4)).openPopup();
+        }
+        
+        function setupEventListeners() {
+            document.getElementById('btn-road').onclick = function() {
+                setActiveButton(this);
+                map.removeLayer(satelliteLayer);
+                map.removeLayer(terrainLayer);
+                if (!map.hasLayer(roadLayer)) map.addLayer(roadLayer);
+                document.getElementById('nav-road').classList.add('active');
+                document.getElementById('nav-satellite').classList.remove('active');
+                document.getElementById('nav-terrain').classList.remove('active');
+            };
+            
+            document.getElementById('btn-satellite').onclick = function() {
+                setActiveButton(this);
+                map.removeLayer(roadLayer);
+                map.removeLayer(terrainLayer);
+                if (!map.hasLayer(satelliteLayer)) map.addLayer(satelliteLayer);
+                document.getElementById('nav-road').classList.remove('active');
+                document.getElementById('nav-satellite').classList.add('active');
+                document.getElementById('nav-terrain').classList.remove('active');
+            };
+            
+            document.getElementById('btn-hybrid').onclick = function() {
+                setActiveButton(this);
+                map.removeLayer(roadLayer);
+                map.removeLayer(satelliteLayer);
+                if (!map.hasLayer(terrainLayer)) map.addLayer(terrainLayer);
+                document.getElementById('nav-road').classList.remove('active');
+                document.getElementById('nav-satellite').classList.remove('active');
+                document.getElementById('nav-terrain').classList.add('active');
+            };
+            
+            document.getElementById('nav-road').onclick = function() { document.getElementById('btn-road').click(); };
+            document.getElementById('nav-satellite').onclick = function() { document.getElementById('btn-satellite').click(); };
+            document.getElementById('nav-terrain').onclick = function() { document.getElementById('btn-hybrid').click(); };
+            
+            document.getElementById('search-route').onclick = searchRoute;
+            document.getElementById('clear-route').onclick = clearRoute;
+            
+            document.querySelectorAll('.nav-list a').forEach(function(link) {
+                link.onclick = function(e) {
+                    e.preventDefault();
+                    var city = this.getAttribute('data-city');
+                    var lng = parseFloat(this.getAttribute('data-lng'));
+                    var lat = parseFloat(this.getAttribute('data-lat'));
+                    navigateToCity(city, lng, lat);
+                };
+            });
+        }
+        
+        function setActiveButton(btn) {
+            document.querySelectorAll('.layer-panel button').forEach(function(b) {
+                b.classList.remove('active');
+            });
+            btn.classList.add('active');
+        }
+        
+        function setupGlobalSearch() {
+            var searchInput = document.getElementById('global-search');
+            var suggestions = document.getElementById('suggestions');
+            
+            searchInput.addEventListener('input', function() {
+                var query = this.value.trim().toLowerCase();
+                if (query.length < 1) {
+                    suggestions.classList.remove('show');
+                    return;
+                }
+                
+                var matches = popularCities.filter(function(city) {
+                    return city.name.toLowerCase().indexOf(query) !== -1;
+                });
+                
+                if (matches.length > 0) {
+                    suggestions.innerHTML = matches.map(function(city) {
+                        return '<div data-lng="' + city.lng + '" data-lat="' + city.lat + '">' + city.name + ' [' + city.lat.toFixed(2) + ', ' + city.lng.toFixed(2) + ']</div>';
+                    }).join('');
+                    suggestions.classList.add('show');
+                } else {
+                    suggestions.innerHTML = '<div style="color:#999;">正在搜索: ' + query + '</div>';
+                    suggestions.classList.add('show');
+                    searchNominatim(query);
+                }
+            });
+            
+            suggestions.addEventListener('click', function(e) {
+                if (e.target.tagName === 'DIV') {
+                    var lng = parseFloat(e.target.getAttribute('data-lng'));
+                    var lat = parseFloat(e.target.getAttribute('data-lat'));
+                    if (lng && lat) {
+                        navigateToCity(e.target.textContent.split('[')[0].trim(), lng, lat);
+                    }
+                    suggestions.classList.remove('show');
+                    searchInput.value = '';
+                }
+            });
+            
+            document.addEventListener('click', function(e) {
+                if (e.target !== searchInput) {
+                    suggestions.classList.remove('show');
+                }
+            });
+        }
+        
+        function searchNominatim(query) {
+            fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query) + '&limit=5')
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.length > 0) {
+                    var suggestions = document.getElementById('suggestions');
+                    suggestions.innerHTML = data.map(function(item) {
+                        return '<div data-lng="' + item.lon + '" data-lat="' + item.lat + '">' + item.display_name + '</div>';
+                    }).join('');
+                }
+            }).catch(function() {});
+        }
+        
+        function navigateToCity(city, lng, lat) {
+            map.setView([lat, lng], 10);
+            markers.forEach(function(marker) { map.removeLayer(marker); });
+            markers = [];
+            
+            var marker = L.marker([lat, lng]).addTo(map);
+            markers.push(marker);
+            marker.bindPopup('<b>📍 ' + city + '</b><br>坐标: ' + lat.toFixed(4) + ', ' + lng.toFixed(4)).openPopup();
+        }
+        
+        function searchRoute() {
+            var start = document.getElementById('start-input').value;
+            var end = document.getElementById('end-input').value;
+            
+            if (!start || !end) {
+                alert('请输入起点和终点');
+                return;
+            }
+            
+            document.getElementById('route-info').innerHTML = '正在查询路线...';
+            document.getElementById('route-result').classList.add('show');
+            
+            Promise.all([
+                fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(start)),
+                fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(end))
+            ])
+            .then(function(responses) {
+                return Promise.all(responses.map(function(r) { return r.json(); }));
+            })
+            .then(function(results) {
+                var startData = results[0];
+                var endData = results[1];
+                
+                if (!startData || startData.length === 0 || !endData || endData.length === 0) {
+                    alert('未找到起点或终点位置');
+                    return;
+                }
+                
+                var startLat = parseFloat(startData[0].lat);
+                var startLng = parseFloat(startData[0].lon);
+                var endLat = parseFloat(endData[0].lat);
+                var endLng = parseFloat(endData[0].lon);
+                
+                var distance = calculateDistance(startLat, startLng, endLat, endLng);
+                var time = Math.round(distance / 60);
+                
+                document.getElementById('route-info').innerHTML =
+                    '<b>起点：</b>' + start + '<br>' +
+                    '<b>终点：</b>' + end + '<br>' +
+                    '<b>直线距离：</b>约 ' + distance.toFixed(1) + ' 公里<br>' +
+                    '<b>预计驾车时间：</b>约 ' + time + ' 分钟';
+                
+                markers.forEach(function(marker) { map.removeLayer(marker); });
+                markers = [];
+                
+                var startMarker = L.marker([startLat, startLng], {icon: createStartIcon()}).addTo(map);
+                var endMarker = L.marker([endLat, endLng], {icon: createEndIcon()}).addTo(map);
+                markers.push(startMarker, endMarker);
+                
+                startMarker.bindPopup('<b>起点</b><br>' + start);
+                endMarker.bindPopup('<b>终点</b><br>' + end);
+                
+                if (routeLayer) map.removeLayer(routeLayer);
+                routeLayer = L.polyline([[startLat, startLng], [endLat, endLng]], {
+                    color: '#2563EB',
+                    weight: 4,
+                    opacity: 0.8,
+                    dashArray: '10, 10'
+                }).addTo(map);
+                
+                var bounds = L.latLngBounds([[startLat, startLng], [endLat, endLng]]);
+                map.fitBounds(bounds, { padding: [80, 80] });
+            })
+            .catch(function() {
+                alert('查询失败，请重试');
+            });
+        }
+        
+        function createStartIcon() {
+            return L.divIcon({
+                className: 'custom-marker',
+                html: '<div style="background:#22c55e;width:16px;height:16px;border-radius:50%;border:3px solid white;box-shadow:0 2px 4px rgba(0,0,0,0.3);"></div>',
+                iconSize: [16, 16],
+                iconAnchor: [8, 8]
+            });
+        }
+        
+        function createEndIcon() {
+            return L.divIcon({
+                className: 'custom-marker',
+                html: '<div style="background:#ef4444;width:16px;height:16px;border-radius:50%;border:3px solid white;box-shadow:0 2px 4px rgba(0,0,0,0.3);"></div>',
+                iconSize: [16, 16],
+                iconAnchor: [8, 8]
+            });
+        }
+        
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            var R = 6371;
+            var dLat = (lat2 - lat1) * Math.PI / 180;
+            var dLon = (lon2 - lon1) * Math.PI / 180;
+            var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                    Math.sin(dLon/2) * Math.sin(dLon/2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        }
+        
+        function clearRoute() {
+            markers.forEach(function(marker) { map.removeLayer(marker); });
+            markers = [];
+            if (routeLayer) { map.removeLayer(routeLayer); routeLayer = null; }
+            document.getElementById('route-result').classList.remove('show');
+            document.getElementById('start-input').value = '';
+            document.getElementById('end-input').value = '';
+        }
+        
+        window.onload = initMap;
+    </script>
+</body>
+</html>
